@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel de Monitoreo · Scraped Items</title>
+<style>
+  :root {
+    --bg: #0b0e0c;
+    --panel: #121613;
+    --panel-border: #23291f;
+    --text-main: #d8e0d4;
+    --text-dim: #798376;
+    --accent: #7ef29c;
+    --accent-dim: #3d5c46;
+    --warn: #f2c97e;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      linear-gradient(rgba(126,242,156,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126,242,156,0.03) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--text-main);
+    font-family: var(--mono);
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .brand-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--text-main);
+  }
+
+  .status-block {
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  .status-dot.offline { background: #e35d5d; box-shadow: 0 0 8px #e35d5d; animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  main {
+    padding: 24px 32px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+
+  .count-tag {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .count-tag strong { color: var(--accent); font-weight: 500; }
+
+  button#refresh {
+    background: transparent;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  button#refresh:hover { background: rgba(126,242,156,0.08); border-color: var(--accent); }
+  button#refresh:active { transform: translateY(1px); }
+  button#refresh:disabled { opacity: 0.5; cursor: default; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-left: 2px solid var(--accent-dim);
+    border-radius: 4px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-left-color 0.2s ease, transform 0.15s ease;
+    animation: rise 0.3s ease backwards;
+  }
+
+  .card:hover { border-left-color: var(--accent); transform: translateY(-1px); }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-title {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-main);
+    margin: 0;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .tag {
+    background: rgba(126,242,156,0.08);
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px dashed var(--panel-border);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .card-footer a {
+    color: var(--warn);
+    text-decoration: none;
+  }
+  .card-footer a:hover { text-decoration: underline; }
+
+  .empty-state, .error-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+    border: 1px dashed var(--panel-border);
+    border-radius: 4px;
+  }
+
+  .error-state { color: #e35d5d; border-color: #4a2727; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--panel-border);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot, .card { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <p class="brand-eyebrow">Pipeline // scraper → api → supabase</p>
+    <h1>Panel de Registros Recolectados</h1>
+  </div>
+  <div class="status-block">
+    <div><span class="status-dot" id="statusDot"></span><span id="statusText">Conectando...</span></div>
+    <div id="lastSync">Última sincronización: —</div>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <span class="count-tag"><strong id="itemCount">0</strong> registros almacenados</span>
+    <button id="refresh">↻ Actualizar</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="empty-state">Cargando datos del servidor...</div>
+  </div>
+</main>
+
+<footer>
+  Frontend estático · consume GET /api/items del backend
+</footer>
+
+<script>
+  // Ajusta esta URL a donde esté corriendo tu server.js
+  const API_BASE_URL = "http://localhost:3000";
+
+  const grid = document.getElementById("grid");
+  const itemCount = document.getElementById("itemCount");
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+  const lastSync = document.getElementById("lastSync");
+  const refreshBtn = document.getElementById("refresh");
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  function renderItems(items) {
+    itemCount.textContent = items.length;
+
+    if (items.length === 0) {
+      grid.innerHTML = `<div class="empty-state">No hay registros todavia. Ejecuta el scraper para poblar la base de datos.</div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map((item, i) => {
+      const meta = item.metadata || {};
+      const tags = Array.isArray(meta.tags) ? meta.tags.slice(0, 4) : [];
+      const created = item.created_at
+        ? new Date(item.created_at).toLocaleString()
+        : "—";
+
+      return `
+        <div class="card" style="animation-delay:${Math.min(i * 30, 300)}ms">
+          <p class="card-title">${escapeHtml(item.title)}</p>
+          ${
+            tags.length
+              ? `<div class="card-meta">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>`
+              : ""
+          }
+          <div class="card-footer">
+            <span>${escapeHtml(item.source || "desconocido")} · ${created}</span>
+            <a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer">abrir ↗</a>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function loadItems() {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "↻ Cargando...";
+    statusText.textContent = "Sincronizando...";
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/items`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      renderItems(data.items || []);
+
+      statusDot.classList.remove("offline");
+      statusText.textContent = "Backend en linea";
+      lastSync.textContent = `Última sincronización: ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+      statusDot.classList.add("offline");
+      statusText.textContent = "Backend no disponible";
+      grid.innerHTML = `<div class="error-state">No se pudo conectar con el backend (${API_BASE_URL}).<br>Verifica que server.js esté corriendo.</div>`;
+      console.error(err);
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "↻ Actualizar";
+    }
+  }
+
+  refreshBtn.addEventListener("click", loadItems);
+  loadItems();
+</script>
+
+</body>
+</html>
