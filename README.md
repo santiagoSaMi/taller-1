@@ -1,4 +1,4 @@
-# Taller: Solución Web Scraper → API → Supabase → Frontend
+# Taller: Solución Web Scraper → API → Supabase → Frontend (Santiago Sabogal Millan)
 
 ## Arquitectura
 
