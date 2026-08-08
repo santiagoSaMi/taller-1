@@ -1,0 +1,108 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taller_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/00_init_auth.sql:/docker-entrypoint-initdb.d/00_init_auth.sql:ro
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  backend:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: taller_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
+    networks:
+      - frontend-net
+      - backend-net
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: taller_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - frontend-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  scraper:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: taller_scraper
+    restart: "no"
+    environment:
+      SCRAPER_TARGET_URL: ${SCRAPER_TARGET_URL:-https://quotes.toscrape.com/}
+      API_ENDPOINT: http://backend:3000/api/items
+      SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
+      SOURCE_NAME: ${SOURCE_NAME:-quotes.toscrape.com}
+    networks:
+      - backend-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

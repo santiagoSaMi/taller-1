@@ -1,0 +1,13 @@
+services:
+  backend:
+    volumes:
+      - ./api/server.js:/app/server.js:ro
+    command: ["node", "--watch", "server.js"]
+
+  frontend:
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+
+  scraper:
+    volumes:
+      - ./scripts/scraper.py:/app/scraper.py:ro
